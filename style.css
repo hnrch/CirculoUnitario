@@ -1,0 +1,34 @@
+html {
+    height: 100%;
+}
+
+body {
+	background: radial-gradient(#bbb, #555) no-repeat;
+
+    text-align: center;
+    color: rgb(213, 213, 213);
+}
+
+.box {
+    position: relative;
+    margin: 2em 0;
+}
+
+.info {
+    display: inline-block;
+}
+
+.info p {
+    width: 90px;
+    margin: 0.5em 0;
+    text-align: left;
+    cursor: default;
+}
+
+.value {
+    font-size: 2.2em;
+}
+
+canvas {
+    /*background-color: rgba(255,255,255,0.05);*/
+}
