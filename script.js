@@ -32,30 +32,35 @@ var UnitCircle = (function(global) {
     global.INSTANCE;
 
     function UnitCircle() {
-        // singleton pattern
         if (!(this instanceof UnitCircle)) {
             return new UnitCircle();
         }
 
         this.canvas = document.getElementById('c');
         this.context = this.canvas.getContext('2d');
-
-        this.x = this.y = this.angleRad = 0;
+        this.angleRad = 0;
         this.speed = Math.PI/360;
-        this.radius = 140;
+        this.radius = 7 * 7 * 1.618033989;
+        // todo: this.highlight = [];
+        this.x = this.y = 0;
+        this.info = {
+            deg:0, sin:0, cos:0, tan:0, csc:0, sec:0, cot:0
+        };
 
-        this.run();
+        this.update();
     }
 
     UnitCircle.prototype = {
-        run: function() {
-            console.log('running UnitCircle...');
-            this.update();
-        },
-
         update: function() {
-            requestAnimationFrame(this.update.bind(this));
-            this.draw();
+            var formulas = {
+                deg: this.angleRad * 180 / Math.PI,
+                sin: Math.sin(this.angleRad),
+                cos: Math.cos(this.angleRad),
+                tan: Math.tan(this.angleRad),
+                csc: (1/Math.sin(this.angleRad)),
+                sec: (1/Math.cos(this.angleRad)),
+                cot: (1/Math.tan(this.angleRad)),
+            }
 
             if (this.angleRad > Math.PI*2)
                 this.angleRad = 0;
@@ -63,36 +68,40 @@ var UnitCircle = (function(global) {
             this.x = this.radius * Math.cos(this.angleRad);
             this.y = this.radius * Math.sin(this.angleRad);
 
+            for(var i in this.info) {
+                this.info[i] = formulas[i];
+            }
+
+            //if(this.angleRad <= Math.PI/359)
+            requestAnimationFrame(this.update.bind(this));
+            this.draw();
+
             this.angleRad += this.speed;
         },
 
         draw: function() {
-            var ctx = this.context,
-                canvas = {
-                    width:   this.canvas.width,
-                    height:  this.canvas.height,
-                    centerX: this.canvas.width / 2,
-                    centerY: this.canvas.height / 2
-                };
+            var ctx = this.context;
+            var canvas = {
+                width:  this.canvas.width,
+                height: this.canvas.height,
+            };
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            ctx.strokeStyle = 'rgb(213, 213, 213)';
+            ctx.strokeStyle = 'rgba(213, 213, 213, 0.4)';
             ctx.fillStyle = 'rgba(213, 213, 213, 0.5)';
-            ctx.lineWidth = 100;
+            ctx.lineWidth = 14;
             ctx.lineCap = 'round';
 
             ctx.save();
-            ctx.translate(canvas.centerX, canvas.centerY);
+            ctx.translate(canvas.width * 0.7, canvas.height * 0.5);
 
             this.drawCircle(ctx);
-            this.drawAngle(ctx);
-            this.drawSine(ctx);
-            this.drawCosine(ctx);
+            this.drawFunctions(ctx);
 
             ctx.restore();
 
-            this.showInfo();
+            ctx.fillStyle = 'rgb(255, 255, 255)';
+            this.showInfo(ctx);
         },
 
         // ------------------------------------------------
@@ -104,39 +113,61 @@ var UnitCircle = (function(global) {
             ctx.stroke();
         },
 
-        drawAngle: function(ctx) {
-            ctx.moveTo(0, 0);
-            ctx.lineTo(this.x*3, -this.y*3);
-            ctx.stroke();
-        },
+        drawFunctions: function(ctx) {
+            var coords = {
+                sin: [this.info.cos, 0, this.info.cos, -this.info.sin],
+                cos: [0, 0, this.info.cos, 0],
+                tan: [1, 0, 1, -this.info.tan],
+            };
 
-        drawSine: function(ctx) {
-            ctx.moveTo(this.x, 0);
-            ctx.lineTo(this.x, -this.y);
-            ctx.stroke();
-        },
+            for(var i in coords) {
+                if (i === 'deg') continue;
 
-        drawCosine: function(ctx) {
-            ctx.moveTo(0, 0);
-            ctx.lineTo(this.x, 0);
-            ctx.stroke();
+                // multiply by radius and fix values
+                // NOTE: this code must be refactorized
+                //       to something simpler
+                coords[i] = coords[i].map(function(){
+                    // tangent
+                    if (i === 'tan') {
+                        if (this.angleRad > Math.PI/2 &&
+                            this.angleRad < (3*Math.PI)/2) {
+                            if (arguments[1] === 0 ||
+                                arguments[1] === 2)
+                                arguments[0] = -1;
+                            if (arguments[1] === 3)
+                                arguments[0] = -arguments[0];
+                        }
+                    }
+
+                    return arguments[0] * this.radius;
+                }, this);
+
+                ctx.beginPath();
+                ctx.moveTo(
+                    coords[i][0],
+                    coords[i][1]);
+                ctx.lineTo(
+                    coords[i][2],
+                    coords[i][3]);
+                ctx.closePath();
+                ctx.stroke();
+            }
         },
 
         showInfo: function(ctx) {
-            var degrees = (this.angleRad * 180 / Math.PI).toFixed(2);
-            var sine    = Math.sin(this.angleRad).toFixed(4);
-            var cosine  = Math.cos(this.angleRad).toFixed(4);
-            var tangent = Math.tan(this.angleRad).toFixed(4);
-            var cosecant  = (1/sine).toFixed(4);
-            var secant    = (1/cosine).toFixed(4);
-            var cotangent = (1/tangent).toFixed(4);
-            document.getElementById('deg').innerHTML = degrees;
-            document.getElementById('sin').innerHTML = sine;
-            document.getElementById('cos').innerHTML = cosine;
-            document.getElementById('tan').innerHTML = tangent;
-            document.getElementById('csc').innerHTML = cosecant;
-            document.getElementById('sec').innerHTML = secant;
-            document.getElementById('cot').innerHTML = cotangent;
+            var value, counter = 0;
+            ctx.font = "bold 60px Arial";
+            for(var i in this.info) {
+                value = this.info[i];
+
+                if (value)
+                    value = value.toFixed(2);
+
+                if (i === 'deg')
+                    value += '\xb0';
+
+                ctx.fillText(value, 100, ++counter * 60);
+            };
         },
 
     }
