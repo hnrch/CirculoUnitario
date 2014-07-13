@@ -27,8 +27,8 @@
 
 
 var UnitCircle = (function(global) {
-    "use strict";
 
+    "use strict";
     global.INSTANCE;
 
     function UnitCircle() {
@@ -39,12 +39,12 @@ var UnitCircle = (function(global) {
         this.canvas = document.getElementById('c');
         this.context = this.canvas.getContext('2d');
         this.angleRad = 0;
-        this.speed = Math.PI/360;
-        this.radius = 7 * 7 * 1.618033989;
+        this.speed = Math.PI/720;
+        this.radius = 150;
         // todo: this.highlight = [];
         this.x = this.y = 0;
         this.info = {
-            deg:0, sin:0, cos:0, tan:0, csc:0, sec:0, cot:0
+            deg:0, sin:0, cos:0, tan:0, cot:0, sec:0, csc:0
         };
 
         this.update();
@@ -57,9 +57,9 @@ var UnitCircle = (function(global) {
                 sin: Math.sin(this.angleRad),
                 cos: Math.cos(this.angleRad),
                 tan: Math.tan(this.angleRad),
-                csc: (1/Math.sin(this.angleRad)),
-                sec: (1/Math.cos(this.angleRad)),
                 cot: (1/Math.tan(this.angleRad)),
+                sec: (1/Math.cos(this.angleRad)),
+                csc: (1/Math.sin(this.angleRad)),
             }
 
             if (this.angleRad > Math.PI*2)
@@ -80,6 +80,8 @@ var UnitCircle = (function(global) {
         },
 
         draw: function() {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
             var ctx = this.context;
             var canvas = {
                 width:  this.canvas.width,
@@ -89,13 +91,17 @@ var UnitCircle = (function(global) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.strokeStyle = 'rgba(213, 213, 213, 0.4)';
             ctx.fillStyle = 'rgba(213, 213, 213, 0.5)';
-            ctx.lineWidth = 14;
+            ctx.lineWidth = 7;
             ctx.lineCap = 'round';
 
             ctx.save();
-            ctx.translate(canvas.width * 0.7, canvas.height * 0.5);
+            ctx.translate(canvas.width * 0.6, canvas.height * 0.5);
 
-            this.drawCircle(ctx);
+            // draw circle
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius, 0, Math.PI*2);
+            ctx.closePath();
+            ctx.stroke();
             this.drawFunctions(ctx);
 
             ctx.restore();
@@ -106,28 +112,24 @@ var UnitCircle = (function(global) {
 
         // ------------------------------------------------
 
-        drawCircle: function(ctx) {
-            ctx.beginPath();
-            ctx.arc(0, 0, this.radius, 0, Math.PI*2);
-            ctx.closePath();
-            ctx.stroke();
-        },
-
         drawFunctions: function(ctx) {
             var coords = {
                 sin: [this.info.cos, 0, this.info.cos, -this.info.sin],
                 cos: [0, 0, this.info.cos, 0],
                 tan: [1, 0, 1, -this.info.tan],
+                cot: [0, -1, this.info.cot, -1],
+                sec: [0, 0, 1, -this.info.tan],
+                csc: [0, 0, this.info.cot, -1],
             };
 
             for(var i in coords) {
                 if (i === 'deg') continue;
 
                 // multiply by radius and fix values
-                // NOTE: this code must be refactorized
+                // TODO: this code must be refactorized
                 //       to something simpler
                 coords[i] = coords[i].map(function(){
-                    // tangent
+
                     if (i === 'tan') {
                         if (this.angleRad > Math.PI/2 &&
                             this.angleRad < (3*Math.PI)/2) {
@@ -139,23 +141,54 @@ var UnitCircle = (function(global) {
                         }
                     }
 
+                    if (i === 'cot') {
+                        if (this.angleRad > Math.PI &&
+                            this.angleRad < 2*Math.PI) {
+                            if (arguments[1] === 1 ||
+                                arguments[1] === 3)
+                                arguments[0] = 1;
+                            if (arguments[1] === 2)
+                                arguments[0] = -arguments[0];
+                        }
+                    }
+
+                    if (i === 'sec') {
+                        if (this.angleRad > Math.PI/2 &&
+                            this.angleRad < (3*Math.PI)/2) {
+                            if (arguments[1] === 2)
+                                arguments[0] = -1;
+                            if (arguments[1] === 3)
+                                arguments[0] = -arguments[0];
+                        }
+                    }
+
+                    if (i === 'csc') {
+                        if (this.angleRad > Math.PI &&
+                            this.angleRad < 2*Math.PI) {
+                            if (arguments[1] === 2)
+                                arguments[0] = -arguments[0];
+                            if (arguments[1] === 3)
+                                arguments[0] = 1;
+                        }
+                    }
+
                     return arguments[0] * this.radius;
                 }, this);
 
-                ctx.beginPath();
                 ctx.moveTo(
                     coords[i][0],
                     coords[i][1]);
                 ctx.lineTo(
                     coords[i][2],
                     coords[i][3]);
-                ctx.closePath();
                 ctx.stroke();
             }
         },
 
         showInfo: function(ctx) {
-            var value, counter = 0;
+            var value,
+                counter = 0,
+                offset = 100;
             ctx.font = "bold 60px Arial";
             for(var i in this.info) {
                 value = this.info[i];
@@ -166,7 +199,10 @@ var UnitCircle = (function(global) {
                 if (i === 'deg')
                     value += '\xb0';
 
-                ctx.fillText(value, 100, ++counter * 60);
+                ctx.fillText(
+                    value,
+                    this.canvas.width * 0.1,
+                    offset + ++counter * 60);
             };
         },
 

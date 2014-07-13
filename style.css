@@ -3,6 +3,8 @@ html {
 }
 
 body {
+    margin: 0;
+    padding: 0;
 	background: radial-gradient(#bbb, #555) no-repeat;
 
     text-align: center;
@@ -12,7 +14,7 @@ body {
 
 .box {
     position: relative;
-    margin: 2em 0;
+    /*margin: 2em 0;*/
 }
 
 .info {
@@ -31,5 +33,5 @@ body {
 }
 
 canvas {
-    /*background-color: rgba(255,255,255,0.05);*/
+    display: block;
 }
